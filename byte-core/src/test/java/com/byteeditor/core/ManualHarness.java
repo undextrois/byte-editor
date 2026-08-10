@@ -57,6 +57,7 @@ public final class ManualHarness {
         parsesLineWithoutErrorPrefix();
         ignoresUnrelatedOutputLines();
         parsesMultipleProblemsFromOutputStream();
+        extractsFileLineAndColumnRegardlessOfMessageLocale();
 
         projectDetectorRecognizesMavenLayout();
         projectDetectorFallsBackToNoneWithoutPom();
@@ -368,6 +369,24 @@ public final class ManualHarness {
         eq("problems.multiCount", 2, problems.size());
         eq("problems.multiFile0", "App.java", problems.get(0).file().getFileName().toString());
         eq("problems.multiFile1", "UserService.java", problems.get(1).file().getFileName().toString());
+    }
+
+    static void extractsFileLineAndColumnRegardlessOfMessageLocale() {
+        // The parser anchors only on the file.java:[line,col] bracket shape
+        // javac emits regardless of JVM locale — everything after it is
+        // opaque message text. Proving that holds for non-English messages.
+        Optional<Problem> german = ProblemsParser.parseLine(
+                "[ERROR] /home/dev/App.java:[42,17] Kann Symbol nicht finden");
+        check("problems.locale.germanPresent", german.isPresent());
+        eq("problems.locale.germanLine", 42, german.get().line());
+        eq("problems.locale.germanColumn", 17, german.get().column());
+        eq("problems.locale.germanMessage", "Kann Symbol nicht finden", german.get().message());
+
+        Optional<Problem> japanese = ProblemsParser.parseLine(
+                "/home/dev/App.java:[14,23] \u30b7\u30f3\u30dc\u30eb\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093");
+        check("problems.locale.japanesePresent", japanese.isPresent());
+        eq("problems.locale.japaneseLine", 14, japanese.get().line());
+        eq("problems.locale.japaneseColumn", 23, japanese.get().column());
     }
 
     static void projectDetectorRecognizesMavenLayout() throws Exception {

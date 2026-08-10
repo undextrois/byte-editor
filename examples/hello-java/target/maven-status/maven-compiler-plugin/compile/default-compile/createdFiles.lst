@@ -4,6 +4,7 @@ com/example/explorertest/ScrollFixture12.class
 com/example/App.class
 com/example/explorertest/ScrollFixture11.class
 com/example/SlowLoop.class
+com/example/WaitsForInput.class
 com/example/explorertest/ScrollFixture01.class
 com/example/explorertest/ScrollFixture10.class
 com/example/explorertest/ScrollFixture09.class

@@ -81,7 +81,13 @@ F6 when the build succeeds
 
 - Single open buffer; no tabs yet.
 - No syntax highlighting yet.
-- No full terminal emulator / PTY.
+- No full terminal emulator / PTY — concretely, this means a running
+  process's stdin is never connected to anything. A program that calls
+  `Scanner.nextLine()` or otherwise reads `System.in` will hang with no way
+  to type into it (keystrokes go to the editor, not the child process).
+  `Esc` reliably kills a hung process in the meantime — see
+  `examples/hello-java/WaitsForInput.java` for a fixture that demonstrates
+  exactly this.
 - No LSP, autocomplete, debugger, Git client, plugins, or AI.
 - No project-wide search yet.
 

@@ -45,6 +45,17 @@ produce a compiler error. Press F8 — the Problems list should show it; Enter
 on that entry should jump straight to the broken line. Rename it back to
 `.disabled` (or delete it) when done so it doesn't linger in the build.
 
+## `WaitsForInput.java` — known limitation: no stdin
+
+Byte does not attach anything to a running process's stdin — this was cut
+from v0.1 scope from day one (full PTY support is a later milestone), but
+it's worth confirming what actually happens rather than just taking the
+scope note on faith. F6 this file: it prints a prompt, then blocks on
+`Scanner.nextLine()` forever, since there's no way to type into it (your
+keystrokes still go to the editor buffer, not the child process). Confirm
+Esc still kills it cleanly — that's the actual escape hatch for this
+limitation until real stdin support exists.
+
 ## Quick pass, all together
 
 1. `SlowLoop.java` → F6 → Esc mid-run → confirm cancel.
@@ -53,3 +64,5 @@ on that entry should jump straight to the broken line. Rename it back to
 3. Expand `explorertest/` → confirm explorer scrollbar appears and scrolls.
 4. Rename `BrokenExample.java.disabled` → `.java` → F5 → F8 → Enter on the
    error → confirm it jumps to the right line → rename back.
+5. `WaitsForInput.java` → F6 → confirm it hangs on the prompt (expected) →
+   Esc → confirm it's actually killed, not just detached from the UI.

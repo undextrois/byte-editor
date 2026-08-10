@@ -61,15 +61,17 @@ public final class MavenBuildProvider implements BuildProvider {
 
     /** Package-visible so the exact command line can be asserted on in tests without starting a real process. */
     List<String> runCommand(String mainClass) {
-        return List.of(mvnExecutable, "-B", "-Dstyle.color=never",
+        return List.of(mvnExecutable, "-B", "-Dstyle.color=never", "-Duser.language=en",
                 "-Dexec.executable=java",
                 "-Dexec.args=-cp %classpath " + mainClass,
                 "org.codehaus.mojo:exec-maven-plugin:3.5.0:exec");
     }
 
     /**
-     * Builds the mvn command line, forcing batch mode and disabling color.
-     * Without {@code -B}, Maven may emit ANSI escape sequences (progress
+     * Builds the mvn command line, forcing batch mode, disabling color, and
+     * pinning the locale to English.
+     *
+     * <p>Without {@code -B}, Maven may emit ANSI escape sequences (progress
      * bars, colorized log levels) even when its stdout is piped rather than
      * attached to a real terminal — those escape codes are control
      * characters that a TUI renderer cannot safely display as text. Batch
@@ -77,10 +79,20 @@ public final class MavenBuildProvider implements BuildProvider {
      * {@link com.byteeditor.tui.Main}'s output sanitization is the backstop
      * for anything that still slips through.
      *
+     * <p>{@code -Duser.language=en} exists for a different reason: without
+     * it, Maven and javac emit diagnostic text in whatever locale the host
+     * JVM defaults to, which is confusing for the majority-English build
+     * console regardless of parsing concerns. {@link ProblemsParser}
+     * happens to already be locale-agnostic — it anchors only on the
+     * {@code file.java:[line,col]} bracket shape javac emits regardless of
+     * locale, treating everything after it as an opaque message — but
+     * forcing English output here removes the mixed-language noise for any
+     * developer on a non-English-locale machine, independent of that.
+     *
      * <p>Package-visible for the same reason as {@link #runCommand}.
      */
     List<String> mavenCommand(String goal) {
-        return List.of(mvnExecutable, "-B", "-Dstyle.color=never", goal);
+        return List.of(mvnExecutable, "-B", "-Dstyle.color=never", "-Duser.language=en", goal);
     }
 
     private void requireSupported(Project project) {

@@ -1,6 +1,8 @@
+com/byteeditor/core/build/MavenBuildProviderTest.class
+com/byteeditor/core/project/MainClassDetectorTest.class
+com/byteeditor/core/build/MavenBuildProviderManualCheck.class
+com/byteeditor/core/build/MavenBuildProviderManualCheck$ThrowingCall.class
 com/byteeditor/core/build/BuildProcessTest.class
 com/byteeditor/core/TextBufferTest.class
 com/byteeditor/core/build/ProblemsParserTest.class
-com/byteeditor/core/build/MavenBuildProviderTest.class
-com/byteeditor/core/project/MainClassDetectorTest.class
 com/byteeditor/core/ManualHarness.class

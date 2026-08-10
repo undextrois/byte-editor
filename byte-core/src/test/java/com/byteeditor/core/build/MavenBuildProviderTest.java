@@ -26,7 +26,7 @@ class MavenBuildProviderTest {
         List<String> command = provider.runCommand("com.example.SlowLoop");
 
         assertEquals(List.of(
-                "mvn", "-B", "-Dstyle.color=never",
+                "mvn", "-B", "-Dstyle.color=never", "-Duser.language=en",
                 "-Dexec.executable=java",
                 "-Dexec.args=-cp %classpath com.example.SlowLoop",
                 "org.codehaus.mojo:exec-maven-plugin:3.5.0:exec"
@@ -41,13 +41,15 @@ class MavenBuildProviderTest {
     }
 
     @Test
-    void mavenCommandForcesBatchModeAndNoColor() {
+    void mavenCommandForcesBatchModeNoColorAndEnglishLocale() {
         // Regression test: without -B, Maven can emit ANSI escape sequences
         // that previously crashed the TUI renderer (see MavenBuildProvider's
-        // class-level rationale). Locking the exact flags in place.
+        // class-level rationale). Without -Duser.language=en, build output
+        // is at the mercy of the host's default locale. Locking the exact
+        // flags in place.
         MavenBuildProvider provider = new MavenBuildProvider("mvn");
-        assertEquals(List.of("mvn", "-B", "-Dstyle.color=never", "package"), provider.mavenCommand("package"));
-        assertEquals(List.of("mvn", "-B", "-Dstyle.color=never", "test"), provider.mavenCommand("test"));
+        assertEquals(List.of("mvn", "-B", "-Dstyle.color=never", "-Duser.language=en", "package"), provider.mavenCommand("package"));
+        assertEquals(List.of("mvn", "-B", "-Dstyle.color=never", "-Duser.language=en", "test"), provider.mavenCommand("test"));
     }
 
     @Test

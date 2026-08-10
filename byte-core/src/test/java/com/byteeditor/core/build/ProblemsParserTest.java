@@ -49,4 +49,26 @@ class ProblemsParserTest {
         assertEquals("App.java", problems.get(0).file().getFileName().toString());
         assertEquals("UserService.java", problems.get(1).file().getFileName().toString());
     }
+
+    @Test
+    void extractsFileLineAndColumnRegardlessOfMessageLocale() {
+        // The parser anchors only on the file.java:[line,col] bracket shape
+        // javac emits regardless of JVM locale — everything after it is
+        // treated as an opaque message. This proves that holds even when the
+        // message itself isn't in English, independent of whatever locale
+        // flag MavenBuildProvider forces on the mvn invocation itself.
+        String german = "[ERROR] /home/dev/App.java:[42,17] Kann Symbol nicht finden";
+        Optional<Problem> problem = ProblemsParser.parseLine(german);
+        assertTrue(problem.isPresent());
+        assertEquals(Path.of("/home/dev/App.java"), problem.get().file());
+        assertEquals(42, problem.get().line());
+        assertEquals(17, problem.get().column());
+        assertEquals("Kann Symbol nicht finden", problem.get().message());
+
+        String japanese = "/home/dev/App.java:[14,23] \u30b7\u30f3\u30dc\u30eb\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093";
+        Optional<Problem> problem2 = ProblemsParser.parseLine(japanese);
+        assertTrue(problem2.isPresent());
+        assertEquals(14, problem2.get().line());
+        assertEquals(23, problem2.get().column());
+    }
 }
