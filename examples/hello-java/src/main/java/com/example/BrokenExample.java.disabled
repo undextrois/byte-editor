@@ -1,0 +1,20 @@
+package com.example;
+
+// Test fixture for Byte's F8 Problems view — see TESTING.md.
+//
+// This file is named ".java.disabled" on purpose: Maven only compiles
+// *.java files, so it's excluded from the build by default and won't break
+// the main "happy path" smoke test (F5 -> BUILD SUCCESS).
+//
+// To use it: rename this file to BrokenExample.java, then F5. The missing
+// semicolon below should produce a compiler error; F8 should show it in the
+// Problems list, and Enter on that entry should jump the editor straight to
+// this line. Rename it back to .disabled (or delete it) afterward so it
+// doesn't linger in the build.
+
+public class BrokenExample {
+    public static void main(String[] args) {
+        int total = 1 + 2
+        System.out.println(total);
+    }
+}

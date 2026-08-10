@@ -1,0 +1,12 @@
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/TextBuffer.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/build/BuildProcess.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/build/BuildProvider.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/build/MavenBuildProvider.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/build/MavenBuildProviderManualCheck.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/build/OutputLine.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/build/Problem.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/build/ProblemsParser.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/project/BuildSystem.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/project/MainClassDetector.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/project/Project.java
+/Users/undextrois/Downloads/byte-v0.1-alpha.3-fixed/byte-core/src/main/java/com/byteeditor/core/project/ProjectDetector.java
