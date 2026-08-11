@@ -301,4 +301,74 @@ class TextBufferTest {
             java.nio.file.Files.deleteIfExists(tmp);
         }
     }
+
+    // ------------------------------------------------------------------
+    // Vertical cursor movement must not split a UTF-16 surrogate pair.
+    //
+    // Horizontal movement/insert/delete were already covered above, but
+    // moveUp/moveDown/setCursor had a separate bug: moving vertically
+    // between lines of different lengths could clamp the cursor to a
+    // column that lands in the middle of a surrogate pair on the
+    // destination line, since the target column comes from the *previous*
+    // line's position, not the destination line's own code points. Fixed
+    // via the private safeUtf16Column helper; tested here through the
+    // public API it backs.
+    // ------------------------------------------------------------------
+
+    @Test
+    void moveDownLandsBeforeSurrogatePairInsteadOfSplittingIt() {
+        String emoji = new String(Character.toChars(0x1F600));
+        TextBuffer buf = TextBuffer.fromString("xx\n" + "a" + emoji + "b");
+        buf.setCursor(0, 2); // "xx", column 2 = end of line, valid position
+        buf.moveDown(); // line 1 = "a"+emoji+"b"; column 2 would split the pair
+        assertEquals(1, buf.getCursorRow());
+        assertEquals(1, buf.getCursorCol()); // backed up to before the pair
+    }
+
+    @Test
+    void moveUpLandsBeforeSurrogatePairInsteadOfSplittingIt() {
+        String emoji = new String(Character.toChars(0x1F600));
+        TextBuffer buf = TextBuffer.fromString("a" + emoji + "b\nxx");
+        buf.setCursor(1, 2); // "xx", column 2 = end of line, valid position
+        buf.moveUp(); // line 0 = "a"+emoji+"b"; column 2 would split the pair
+        assertEquals(0, buf.getCursorRow());
+        assertEquals(1, buf.getCursorCol());
+    }
+
+    @Test
+    void setCursorDirectlyAvoidsSplittingASurrogatePair() {
+        String emoji = new String(Character.toChars(0x1F600));
+        TextBuffer buf = TextBuffer.fromString("a" + emoji + "b");
+        buf.setCursor(0, 2); // would land between the pair's two chars
+        assertEquals(1, buf.getCursorCol());
+    }
+
+    @Test
+    void setCursorAtSafePositionsAroundSurrogatePairIsUnaffected() {
+        String emoji = new String(Character.toChars(0x1F600));
+        TextBuffer buf = TextBuffer.fromString("a" + emoji + "b"); // length 4
+        buf.setCursor(0, 0);
+        assertEquals(0, buf.getCursorCol());
+        buf.setCursor(0, 1); // right before the pair
+        assertEquals(1, buf.getCursorCol());
+        buf.setCursor(0, 3); // right after the pair
+        assertEquals(3, buf.getCursorCol());
+        buf.setCursor(0, 4); // end of line
+        assertEquals(4, buf.getCursorCol());
+    }
+
+    @Test
+    void pageDownAvoidsSplittingSurrogatePairViaSetCursor() {
+        // pageUp/pageDown both route through setCursor, so this exercises
+        // the same fix through a different public entry point.
+        String emoji = new String(Character.toChars(0x1F600));
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 5; i++) sb.append("xx\n");
+        sb.append("a").append(emoji).append("b");
+        TextBuffer buf = TextBuffer.fromString(sb.toString());
+        buf.setCursor(0, 2);
+        buf.pageDown(5); // lands on the emoji line at column 2 -> splits pair
+        assertEquals(5, buf.getCursorRow());
+        assertEquals(1, buf.getCursorCol());
+    }
 }

@@ -53,6 +53,12 @@ public final class ManualHarness {
         moveUpAndDownClampColumnToShorterLines();
         saveClearsDirtyFlag();
 
+        moveDownLandsBeforeSurrogatePairInsteadOfSplittingIt();
+        moveUpLandsBeforeSurrogatePairInsteadOfSplittingIt();
+        setCursorDirectlyAvoidsSplittingASurrogatePair();
+        setCursorAtSafePositionsAroundSurrogatePairIsUnaffected();
+        pageDownAvoidsSplittingSurrogatePairViaSetCursor();
+
         parsesStandardCompilerErrorLine();
         parsesLineWithoutErrorPrefix();
         ignoresUnrelatedOutputLines();
@@ -61,6 +67,13 @@ public final class ManualHarness {
 
         projectDetectorRecognizesMavenLayout();
         projectDetectorFallsBackToNoneWithoutPom();
+
+        findsPomInTheFilesOwnDirectory();
+        walksUpMultipleLevelsToFindPom();
+        prefersNearestPomOverAnAggregatorPomFurtherUp();
+        acceptsADirectoryDirectlyNotJustAFile();
+        fallsBackToTheOriginalDirectoryWhenNoPomExistsAnywhereUpward();
+        nearestNullTargetThrows();
 
         buildProcessStreamsStdoutAndStderrSeparately();
         buildProcessReportsNonZeroExitCode();
@@ -339,6 +352,56 @@ public final class ManualHarness {
         }
     }
 
+    static void moveDownLandsBeforeSurrogatePairInsteadOfSplittingIt() {
+        String emoji = new String(Character.toChars(0x1F600));
+        TextBuffer buf = TextBuffer.fromString("xx\n" + "a" + emoji + "b");
+        buf.setCursor(0, 2);
+        buf.moveDown();
+        eq("safeUtf16.moveDownRow", 1, buf.getCursorRow());
+        eq("safeUtf16.moveDownCol", 1, buf.getCursorCol());
+    }
+
+    static void moveUpLandsBeforeSurrogatePairInsteadOfSplittingIt() {
+        String emoji = new String(Character.toChars(0x1F600));
+        TextBuffer buf = TextBuffer.fromString("a" + emoji + "b\nxx");
+        buf.setCursor(1, 2);
+        buf.moveUp();
+        eq("safeUtf16.moveUpRow", 0, buf.getCursorRow());
+        eq("safeUtf16.moveUpCol", 1, buf.getCursorCol());
+    }
+
+    static void setCursorDirectlyAvoidsSplittingASurrogatePair() {
+        String emoji = new String(Character.toChars(0x1F600));
+        TextBuffer buf = TextBuffer.fromString("a" + emoji + "b");
+        buf.setCursor(0, 2);
+        eq("safeUtf16.setCursorSplit", 1, buf.getCursorCol());
+    }
+
+    static void setCursorAtSafePositionsAroundSurrogatePairIsUnaffected() {
+        String emoji = new String(Character.toChars(0x1F600));
+        TextBuffer buf = TextBuffer.fromString("a" + emoji + "b");
+        buf.setCursor(0, 0);
+        eq("safeUtf16.safe0", 0, buf.getCursorCol());
+        buf.setCursor(0, 1);
+        eq("safeUtf16.safe1", 1, buf.getCursorCol());
+        buf.setCursor(0, 3);
+        eq("safeUtf16.safe3", 3, buf.getCursorCol());
+        buf.setCursor(0, 4);
+        eq("safeUtf16.safe4", 4, buf.getCursorCol());
+    }
+
+    static void pageDownAvoidsSplittingSurrogatePairViaSetCursor() {
+        String emoji = new String(Character.toChars(0x1F600));
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 5; i++) sb.append("xx\n");
+        sb.append("a").append(emoji).append("b");
+        TextBuffer buf = TextBuffer.fromString(sb.toString());
+        buf.setCursor(0, 2);
+        buf.pageDown(5);
+        eq("safeUtf16.pageDownRow", 5, buf.getCursorRow());
+        eq("safeUtf16.pageDownCol", 1, buf.getCursorCol());
+    }
+
     static void parsesStandardCompilerErrorLine() {
         Optional<Problem> p = ProblemsParser.parseLine("[ERROR] /home/dev/App.java:[42,17] cannot find symbol");
         check("problems.present", p.isPresent());
@@ -412,6 +475,96 @@ public final class ManualHarness {
         } finally {
             deleteRecursive(tmpDir);
         }
+    }
+
+    static void findsPomInTheFilesOwnDirectory() throws Exception {
+        Path moduleRoot = Files.createTempDirectory("nearest-same-dir-");
+        try {
+            Files.createFile(moduleRoot.resolve("pom.xml"));
+            Path file = moduleRoot.resolve("Standalone.java");
+            Files.createFile(file);
+            Project project = ProjectDetector.detectNearest(file);
+            eq("nearest.sameDir.buildSystem", BuildSystem.MAVEN, project.getBuildSystem());
+            eq("nearest.sameDir.root", moduleRoot.toRealPath(), project.getRoot().toRealPath());
+        } finally {
+            deleteRecursive(moduleRoot);
+        }
+    }
+
+    static void walksUpMultipleLevelsToFindPom() throws Exception {
+        Path moduleRoot = Files.createTempDirectory("nearest-multi-level-");
+        try {
+            Files.createFile(moduleRoot.resolve("pom.xml"));
+            Path deep = moduleRoot.resolve("src/main/java/com/example");
+            Files.createDirectories(deep);
+            Path file = deep.resolve("App.java");
+            Files.createFile(file);
+            Project project = ProjectDetector.detectNearest(file);
+            eq("nearest.multiLevel.buildSystem", BuildSystem.MAVEN, project.getBuildSystem());
+            eq("nearest.multiLevel.root", moduleRoot.toRealPath(), project.getRoot().toRealPath());
+        } finally {
+            deleteRecursive(moduleRoot);
+        }
+    }
+
+    static void prefersNearestPomOverAnAggregatorPomFurtherUp() throws Exception {
+        // The exact real-world bug: an outer aggregator pom.xml and a
+        // nested module's own pom.xml both exist in the file's ancestry.
+        // Must return the nearer module, not the aggregator -- returning
+        // the aggregator is what produced "@ byte-parent" instead of
+        // "@ hello-java" and a ClassNotFoundException.
+        Path workspaceRoot = Files.createTempDirectory("nearest-aggregator-");
+        try {
+            Files.createFile(workspaceRoot.resolve("pom.xml"));
+            Path innerModule = workspaceRoot.resolve("examples/hello-java");
+            Files.createDirectories(innerModule);
+            Files.createFile(innerModule.resolve("pom.xml"));
+            Path srcFile = innerModule.resolve("src/main/java/com/example/App.java");
+            Files.createDirectories(srcFile.getParent());
+            Files.createFile(srcFile);
+            Project project = ProjectDetector.detectNearest(srcFile);
+            eq("nearest.prefersInner", innerModule.toRealPath(), project.getRoot().toRealPath());
+        } finally {
+            deleteRecursive(workspaceRoot);
+        }
+    }
+
+    static void acceptsADirectoryDirectlyNotJustAFile() throws Exception {
+        Path moduleRoot = Files.createTempDirectory("nearest-dir-input-");
+        try {
+            Files.createFile(moduleRoot.resolve("pom.xml"));
+            Path subDir = moduleRoot.resolve("src");
+            Files.createDirectory(subDir);
+            Project project = ProjectDetector.detectNearest(subDir);
+            eq("nearest.directoryInput", moduleRoot.toRealPath(), project.getRoot().toRealPath());
+        } finally {
+            deleteRecursive(moduleRoot);
+        }
+    }
+
+    static void fallsBackToTheOriginalDirectoryWhenNoPomExistsAnywhereUpward() throws Exception {
+        Path isolated = Files.createTempDirectory("nearest-no-pom-");
+        try {
+            Path nested = isolated.resolve("a/b/c");
+            Files.createDirectories(nested);
+            Path file = nested.resolve("Something.java");
+            Files.createFile(file);
+            Project project = ProjectDetector.detectNearest(file);
+            eq("nearest.fallback.buildSystem", BuildSystem.NONE, project.getBuildSystem());
+            eq("nearest.fallback.root", nested.toRealPath(), project.getRoot().toRealPath());
+        } finally {
+            deleteRecursive(isolated);
+        }
+    }
+
+    static void nearestNullTargetThrows() {
+        boolean threw = false;
+        try {
+            ProjectDetector.detectNearest(null);
+        } catch (IllegalArgumentException e) {
+            threw = true;
+        }
+        check("nearest.nullThrows", threw);
     }
 
     static void buildProcessStreamsStdoutAndStderrSeparately() throws Exception {

@@ -2,6 +2,6 @@ package com.example;
 
 public class App {
     public static void main(String[] args) {
-        System.out.println("Hello from Byte!");
+        System.out.println("xHello from Byte!");
     }
 }
