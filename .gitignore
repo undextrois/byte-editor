@@ -1,0 +1,28 @@
+# Maven build output (byte-core, byte-tui, and examples/hello-java all produce these)
+target/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Stray compiled classes outside target/ (e.g. from ad-hoc javac runs while testing)
+*.class
+
+# Test fixture: BrokenExample.java.disabled is meant to stay disabled by
+# extension (see examples/hello-java/TESTING.md). If it's renamed to .java
+# to test the Problems view, don't let it get committed by accident.
+examples/hello-java/src/main/java/com/example/BrokenExample.java
